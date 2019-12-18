@@ -151,7 +151,11 @@ def wrap_importCards(self, _old):
             largest = card[8]
 
     if (revlog or revFound) and \
-    not askUser(_("Import scheduling information?")):
+    not askUser(
+            _("Import scheduling information?<br>No will rest cards as new."),
+            defaultno=True,
+            title="Scheduling information detected"
+        ):
         cards = makeNew(self, cards, largest)
         revlog = []
     else:
