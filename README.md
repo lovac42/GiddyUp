@@ -11,3 +11,7 @@ When you import a shared deck with scheduling info, imported stats are merged wi
 <i>Someone else's data in my stats due to shared decks with scheduling info.</i><br><br>
 
 The simple solution is to check whether a shared deck contains scheduling info during import. And if any are found, ask the user how to handle them. This addon lets the user decide whether to import the shared deck as is with scheduling info or to reset them as new during import. Resetting could mess up the sorting order, and the user will need to manually re-sort them in the browser afterwards.
+
+
+## 2.1.24 and later versions:
+Due to background tasks added in 2.1.24, a dialog can not be presented to the user at the time of import. For that reason, this addon switched to using config settings instead. All versions before 2.1.24 will show a dialog, whereas all versions .24 and later will use the config settings.
