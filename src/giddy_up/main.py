@@ -9,6 +9,9 @@ from anki.utils import intTime
 from anki.hooks import wrap
 from anki.lang import _
 
+from .const import ADDON_NAME
+from .config import Config
+from .lib.com.lovac42.anki.version import POINT_VERSION, ANKI21
 
 
 def makeNew(self, cards, largest):
@@ -43,16 +46,21 @@ def make_did(self, did):
         return self._decks[did]
     # get the name in src
     g = self.src.decks.get(did)
-    name = g['name']
+    name = g["name"]
     # if there's a prefix, replace the top level deck
     if self.deckPrefix:
         tmpname = "::".join(name.split("::")[1:])
         name = self.deckPrefix
         if tmpname:
             name += "::" + tmpname
+
     # manually create any parents so we can pull in descriptions
     head = ""
+
     for parent in name.split("::")[:-1]:
+    # for parent in DeckManager.immediate_parent_path(name):
+
+
         if head:
             head += "::"
         head += parent
@@ -60,7 +68,7 @@ def make_did(self, did):
         self._did(idInSrc)
     # if target is a filtered deck, we'll need a new deck name
     deck = self.dst.decks.byName(name)
-    if deck and deck['dyn']:
+    if deck and deck["dyn"]:
         name = "%s %d" % (name, intTime())
     # create in local
     newid = self.dst.decks.id(name)
@@ -74,6 +82,11 @@ def make_did(self, did):
 
 
 def wrap_importCards(self, _old):
+    try:
+        if self.mustResetLearning:
+            self.src.changeSchedulerVer(2)
+    except AttributeError: pass
+
     # build map of (guid, ord) -> cid and used id cache
     self._cards = {}
     existing = {}
@@ -150,12 +163,7 @@ def wrap_importCards(self, _old):
         if card[8] > largest:
             largest = card[8]
 
-    if (revlog or revFound) and \
-    not askUser(
-            _("Import scheduling information?<br>No will rest cards as new."),
-            defaultno=True,
-            title="Scheduling information detected"
-        ):
+    if (revlog or revFound) and _userOption():
         cards = makeNew(self, cards, largest)
         revlog = []
     else:
@@ -172,10 +180,33 @@ insert or ignore into revlog values (?,?,?,?,?,?,?,?,?)""", revlog)
 
 
 
+
+
+if POINT_VERSION > 23 and ANKI21:
+    conf = Config(ADDON_NAME)
+else:
+    conf = None
+
+
+def _userOption():
+    if conf:
+        # multi threading added in .24+ prevents dialog from being displayed.
+        return conf.get("import_cards_as_new", True)
+
+    return not askUser(
+        _("Import scheduling information?<br>(No) will reset all cards to new."),
+        defaultno=True,
+        title="Scheduling information detected"
+    )
+
+
+
+
+
+
 from anki.importing.apkg import AnkiPackageImporter
 AnkiPackageImporter._importCards=wrap(
     AnkiPackageImporter._importCards,
     wrap_importCards,
     "around"
 )
-
